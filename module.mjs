@@ -1,7 +1,8 @@
 // @ts-check
-import { module } from "@prisma/composer";
-import apiService from "./apps/api/service.mjs";
+import { module } from '@prisma/composer';
 
-export default module("api", ({ provision }) => {
+import apiService from './apps/api/service.mjs';
+
+export default module('api', ({ provision }) => {
   provision(apiService);
 });

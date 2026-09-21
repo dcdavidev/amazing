@@ -37,3 +37,7 @@ yarn-error.log*
 *.pem
 .prisma-composer/
 .alchemy/
+.agents/
+.claude/
+.cursor/
+.devin/
