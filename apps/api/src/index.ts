@@ -1,3 +1,5 @@
+import '@dotenvx/dotenvx/config';
+
 import express from 'express';
 
 import cors from 'cors';
