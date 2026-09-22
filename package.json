@@ -65,16 +65,5 @@
   "packageManager": "pnpm@11.25.0",
   "engines": {
     "node": ">=24"
-  },
-  "pnpm": {
-    "overrides": {
-      "@effect/platform-bun": "4.0.0-rc.112",
-      "@effect/platform-node": "4.0.0-rc.112",
-      "@effect/platform-node-shared": "4.0.0-rc.112",
-      "@effect/sql-d1": "4.0.0-rc.112",
-      "@effect/sql-pg": "4.0.0-rc.112",
-      "@effect/vitest": "4.0.0-rc.112",
-      "effect": "4.0.0-rc.112"
-    }
   }
 }
