@@ -7,6 +7,7 @@
     "build": "tsc",
     "check-types": "tsc --noEmit",
     "dev": "node --watch src/index.ts",
+    "dev:server": "node --watch src/index.ts",
     "postinstall": "prisma skills sync || exit 0",
     "prisma:generate": "pnpm exec prisma generate",
     "prisma:migrate": "pnpm exec prisma migrate dev",

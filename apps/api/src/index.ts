@@ -8,7 +8,9 @@ import compression from 'compression';
 import hpp from 'hpp';
 
 import { logger } from './logger.ts';
+import { articleRouter } from './routes/article.route.ts';
 import { healthRouter } from './routes/health.route.ts';
+import { replenishmentRouter } from './routes/replenishment.route.ts';
 
 /**
  * Express application instance.
@@ -53,6 +55,16 @@ app.use(
  * Health check endpoint.
  */
 app.use('/health', healthRouter);
+
+/**
+ * Catalog articles endpoints.
+ */
+app.use('/api/articles', articleRouter);
+
+/**
+ * Replenishment calculation endpoints.
+ */
+app.use('/api/replenishment', replenishmentRouter);
 
 /**
  * Root endpoint.

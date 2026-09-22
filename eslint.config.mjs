@@ -351,6 +351,7 @@ export default defineConfig([
       ],
 
       'unicorn/no-null': 'off',
+      'unicorn/name-replacements': 'off',
       'unicorn/prevent-abbreviations': 'off',
     },
   },
