@@ -111,6 +111,9 @@ export default defineConfig([
 
     // Other unsupported files
     '**/*.hbs',
+
+    // prisma generated files
+    'apps/api/src/models/prisma/**',
   ]),
 
   // --- Common for JS/TS/JSX/TSX ---
