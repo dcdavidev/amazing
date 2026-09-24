@@ -29,6 +29,7 @@ export default defineConfig([
     '**/.next/**',
     '**/.nuxt/**',
     '**/.svelte-kit/**',
+    '**/.react-router/**',
     '**/.turbo/**',
     '**/.pnpm/**',
     '**/.npm/**',
