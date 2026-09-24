@@ -1,9 +1,12 @@
 import type { Request, Response } from 'express';
 
-import { calculateReplenishment } from '../lib/calculator.ts';
+import { calculateReplenishment } from '../lib/replenishment.ts';
 import { logger } from '../logger.ts';
-import { getOffersByArticleId } from '../repositories/replenishment.repository.ts';
-import type { PurchaseOrderRequest } from '../types/calculator.ts';
+import { getOffersByArticleId } from '../repositories/get-offers-by-article-id.ts';
+import type {
+  EvaluateReplenishmentBody,
+  PurchaseOrderRequest,
+} from '../types/replenishment.ts';
 
 /**
  * Handles replenishment calculation for a requested article, quantity, and date.
@@ -17,11 +20,8 @@ export async function evaluateReplenishment(
   response: Response
 ): Promise<void> {
   try {
-    const { articleId, quantity, orderDate } = request.body as {
-      readonly articleId?: unknown;
-      readonly quantity?: unknown;
-      readonly orderDate?: unknown;
-    };
+    const { articleId, quantity, orderDate } =
+      request.body as EvaluateReplenishmentBody;
 
     if (typeof articleId !== 'string' || articleId.trim().length === 0) {
       response

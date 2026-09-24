@@ -1,19 +1,6 @@
 import type { Request, Response } from 'express';
 
-/**
- * Health check response payload interface.
- */
-export interface HealthStatus {
-  status: 'ok';
-  timestamp: string;
-  uptime: number;
-  environment: string;
-  memoryUsage: {
-    heapTotal: number;
-    heapUsed: number;
-    rss: number;
-  };
-}
+import type { HealthStatus } from '../types/health.ts';
 
 /**
  * Handles health check requests and returns system status metrics.
