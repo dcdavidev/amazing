@@ -1,29 +1,34 @@
 import '@fontsource-variable/inter';
 
+import React from 'react';
+
 import {
   isRouteErrorResponse,
   Links,
   Meta,
+  NavLink,
   Outlet,
   Scripts,
   ScrollRestoration,
 } from 'react-router';
 
+import {
+  AppBar,
+  Avatar,
+  Box,
+  Container,
+  Toolbar,
+  Typography,
+} from '@mui/material';
+import CssBaseline from '@mui/material/CssBaseline';
+import { ThemeProvider } from '@mui/material/styles';
+
 import './app.css';
 
 import type { Route } from './+types/root';
+import { theme } from './configs/theme';
 
 export const links: Route.LinksFunction = () => [
-  { rel: 'preconnect', href: 'https://fonts.googleapis.com' },
-  {
-    rel: 'preconnect',
-    href: 'https://fonts.gstatic.com',
-    crossOrigin: 'anonymous',
-  },
-  {
-    rel: 'stylesheet',
-    href: 'https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap',
-  },
   {
     rel: 'icon',
     type: 'image/png',
@@ -51,6 +56,8 @@ export const links: Route.LinksFunction = () => [
 ];
 
 export const meta: Route.MetaFunction = () => [
+  { title: 'Amazing Shop' },
+  { name: 'description', content: 'Amazing Shop' },
   { name: 'apple-mobile-web-app-title', content: 'Amazing' },
 ];
 
@@ -59,12 +66,18 @@ export function Layout({ children }: { children: React.ReactNode }) {
     <html lang="en">
       <head>
         <meta charSet="utf-8" />
-        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <meta
+          name="viewport"
+          content="width=device-width, initial-scale=1, user-scalable=no"
+        />
         <Meta />
         <Links />
       </head>
       <body>
-        {children}
+        <ThemeProvider theme={theme}>
+          <CssBaseline />
+          {children}
+        </ThemeProvider>
         <ScrollRestoration />
         <Scripts />
       </body>
@@ -73,7 +86,23 @@ export function Layout({ children }: { children: React.ReactNode }) {
 }
 
 export default function App() {
-  return <Outlet />;
+  return (
+    <Box sx={{ flexGrow: 1 }}>
+      <AppBar position="sticky" color="primary" elevation={1}>
+        <Toolbar>
+          <NavLink to="/">
+            <Avatar alt="Amazing" src="/logo/square.png" />
+          </NavLink>
+          <Typography variant="h6" component="div" sx={{ ml: 2, flexGrow: 1 }}>
+            Amazing Shop
+          </Typography>
+        </Toolbar>
+      </AppBar>
+      <Container maxWidth="lg" sx={{ my: 4 }}>
+        <Outlet />
+      </Container>
+    </Box>
+  );
 }
 
 export function ErrorBoundary({ error }: Route.ErrorBoundaryProps) {
