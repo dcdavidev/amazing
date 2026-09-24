@@ -4,15 +4,14 @@ import express from 'express';
 
 import cors from 'cors';
 import { rateLimit } from 'express-rate-limit';
-import { pinoHttp } from 'pino-http';
 
 import compression from 'compression';
 import hpp from 'hpp';
 
 import { logger } from './logger.ts';
-import { articleRouter } from './routes/article.route.ts';
-import { healthRouter } from './routes/health.route.ts';
-import { replenishmentRouter } from './routes/replenishment.route.ts';
+import { articleRouter } from './routes/article.ts';
+import { healthRouter } from './routes/health.ts';
+import { replenishmentRouter } from './routes/replenishment.ts';
 
 /**
  * Express application instance.
@@ -35,7 +34,6 @@ const allowedOrigins: Array<string | RegExp> = [
   ...(process.env.CORS_ORIGIN ? process.env.CORS_ORIGIN.split(',') : []),
 ];
 
-app.use(pinoHttp({ logger }));
 app.use(
   cors({
     origin: allowedOrigins,
