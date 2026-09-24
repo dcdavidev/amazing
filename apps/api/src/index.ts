@@ -61,12 +61,12 @@ app.use('/health', healthRouter);
 /**
  * Catalog articles endpoints.
  */
-app.use('/api/articles', articleRouter);
+app.use('/articles', articleRouter);
 
 /**
  * Replenishment calculation endpoints.
  */
-app.use('/api/replenishment', replenishmentRouter);
+app.use('/replenishment', replenishmentRouter);
 
 /**
  * Root endpoint.
