@@ -26,6 +26,7 @@ import { ThemeProvider } from '@mui/material/styles';
 import './app.css';
 
 import type { Route } from './+types/root';
+import { LoadingScreen } from './components/LoadingScreen';
 import { theme } from './configs/theme';
 
 export const links: Route.LinksFunction = () => [
@@ -83,6 +84,10 @@ export function Layout({ children }: { children: React.ReactNode }) {
       </body>
     </html>
   );
+}
+
+export function HydrateFallback() {
+  return <LoadingScreen />;
 }
 
 export default function App() {
