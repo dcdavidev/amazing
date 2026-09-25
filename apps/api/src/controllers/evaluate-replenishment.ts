@@ -24,9 +24,9 @@ export async function evaluateReplenishment(
       request.body as EvaluateReplenishmentBody;
 
     if (typeof articleId !== 'string' || articleId.trim().length === 0) {
-      response
-        .status(400)
-        .json({ error: 'Field "articleId" must be a non-empty string' });
+      response.status(400).json({
+        error: 'Il campo "articleId" deve essere una stringa non vuota',
+      });
       return;
     }
 
@@ -37,7 +37,7 @@ export async function evaluateReplenishment(
     ) {
       response
         .status(400)
-        .json({ error: 'Field "quantity" must be a positive integer' });
+        .json({ error: 'Il campo "quantity" deve essere un intero positivo' });
       return;
     }
 
@@ -45,9 +45,10 @@ export async function evaluateReplenishment(
     if (typeof orderDate === 'string' && orderDate.trim().length > 0) {
       const candidateDate = new Date(orderDate);
       if (Number.isNaN(candidateDate.getTime())) {
-        response
-          .status(400)
-          .json({ error: 'Field "orderDate" must be a valid ISO date string' });
+        response.status(400).json({
+          error:
+            'Il campo "orderDate" deve essere una stringa di data ISO valida',
+        });
         return;
       }
       parsedDate = candidateDate;
@@ -61,9 +62,9 @@ export async function evaluateReplenishment(
 
     const offers = await getOffersByArticleId(articleId);
     if (offers.length === 0) {
-      response
-        .status(404)
-        .json({ error: 'No suppliers found for the requested article' });
+      response.status(404).json({
+        error: "Nessun fornitore trovato per l'articolo richiesto",
+      });
       return;
     }
 
@@ -73,6 +74,6 @@ export async function evaluateReplenishment(
     logger.error(error, 'Failed to calculate replenishment proposal');
     response
       .status(500)
-      .json({ error: 'Failed to calculate replenishment proposal' });
+      .json({ error: 'Impossibile calcolare la proposta di rifornimento' });
   }
 }

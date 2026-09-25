@@ -17,19 +17,19 @@ export async function getArticleById(
   try {
     const { id } = request.params;
     if (typeof id !== 'string' || id.trim().length === 0) {
-      response.status(400).json({ error: 'Article ID is required' });
+      response.status(400).json({ error: "L'ID dell'articolo è obbligatorio" });
       return;
     }
 
     const article = await fetchArticleById(id);
     if (!article) {
-      response.status(404).json({ error: 'Article not found' });
+      response.status(404).json({ error: 'Articolo non trovato' });
       return;
     }
 
     response.status(200).json(article);
   } catch (error: unknown) {
     logger.error(error, 'Failed to retrieve article');
-    response.status(500).json({ error: 'Failed to retrieve article' });
+    response.status(500).json({ error: "Impossibile recuperare l'articolo" });
   }
 }

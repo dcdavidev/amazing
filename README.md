@@ -5,15 +5,26 @@
 
 ---
 
+## DEMO
+
+I servizi sono deployati e accessibili online ai seguenti indirizzi:
+
+- 🌐 **Frontend Web**: [https://amazing-web-psi.vercel.app/](https://amazing-web-psi.vercel.app/)
+- ⚙️ **Backend REST API**: [https://amazing-api-three.vercel.app/](https://amazing-api-three.vercel.app/)
+
+---
+
 ## Indice
 
+- [DEMO](#demo)
+
 1. [Panoramica del Progetto](#panoramica-del-progetto)
-2. [Architettura del Monorepo](#architettura-del-monorepo)
-3. [Scelte Tecniche e Design Pattern](#scelte-tecniche-e-design-pattern)
-4. [Analisi Funzionale BDD / TDD](#analisi-funzionale-bdd--tdd)
-5. [Casi di Esempio della Traccia (Verifica dei Dati)](#casi-di-esempio-della-traccia-verifica-dei-dati)
-6. [Specifica degli Endpoint API](#specifica-degli-endpoint-api)
-7. [Requisiti e Installazione](#requisiti-e-installazione)
+2. [Requisiti e Installazione](#requisiti-e-installazione)
+3. [Architettura del Monorepo](#architettura-del-monorepo)
+4. [Scelte Tecniche e Design Pattern](#scelte-tecniche-e-design-pattern)
+5. [Analisi Funzionale BDD / TDD](#analisi-funzionale-bdd--tdd)
+6. [Casi di Esempio della Traccia (Verifica dei Dati)](#casi-di-esempio-della-traccia-verifica-dei-dati)
+7. [Specifica degli Endpoint API](#specifica-degli-endpoint-api)
 8. [Guida all'Avvio e all'Utilizzo](#guida-allavvio-e-allutilizzo)
 9. [Qualità del Codice e Strumenti](#qualità-del-codice-e-strumenti)
 
@@ -33,6 +44,96 @@ Il sistema risolve il problema della **gestione ottimale degli ordini di riforni
   2. Calcola l'importo totale dell'ordine applicando in cascata gli sconti spettanti.
   3. Suggerisce il **miglior fornitore** evidenziando chiaramente la scelta più economica.
   4. Mostra i **tempi di consegna** (`minDaysToShip`), consentendo all'acquirente di preferire un fornitore più rapido rispetto al più economico se la priorità è la velocità.
+
+---
+
+## Requisiti e Installazione
+
+### Prerequisiti
+
+- **Node.js**: versione $\ge 24.0.0$
+- **pnpm**: versione $\ge 11.0.0$
+- Un'istanza database **PostgreSQL** accessibile (es. locale o via container Docker).
+
+### Installazione delle Dipendenze
+
+Dalla radice del monorepo, eseguire:
+
+```bash
+pnpm install
+```
+
+### Configurazione delle Variabili d'Ambiente
+
+Il repository include i file di configurazione preconfigurati per ciascun ambiente in entrambe le applicazioni:
+
+- **Backend API**: [`apps/api/.env.development`](file:///home/dcdavidev/amazing/apps/api/.env.development) e [`apps/api/.env.production`](file:///home/dcdavidev/amazing/apps/api/.env.production)
+- **Frontend Web**: [`apps/web/.env.development`](file:///home/dcdavidev/amazing/apps/web/.env.development) e [`apps/web/.env.production`](file:///home/dcdavidev/amazing/apps/web/.env.production)
+
+> [!IMPORTANT]
+> **Creazione del Database PostgreSQL a cura dell'utente**:  
+> Per motivi di sicurezza e isolamento dei dati, chi effettua il clone del progetto in locale deve **creare un proprio database PostgreSQL** (ad esempio in locale tramite Docker, servizio PostgreSQL di sistema, o un provider cloud come Neon, Supabase, Prisma Postgres) e **inserire la relativa connection string** all'interno della variabile `DATABASE_URL` nel file `.env` di `apps/api/`.
+
+#### Dettaglio delle Variabili d'Ambiente
+
+##### Backend (`apps/api`)
+
+| Variabile      | Descrizione                                                                                                                   | Valore Sviluppo (`.env.development`)          | Valore Produzione (`.env.production`)                                     |      Obbligatoria       |
+| :------------- | :---------------------------------------------------------------------------------------------------------------------------- | :-------------------------------------------- | :------------------------------------------------------------------------ | :---------------------: |
+| `DATABASE_URL` | Connection string PostgreSQL (con schema e opzionale `?sslmode=require`). Usata da Prisma per connessione, migrazioni e seed. | _(A cura dell'utente)_                        | _(A cura dell'utente)_                                                    |         **Sì**          |
+| `CORS_ORIGIN`  | Elenco di origini consentite separate da virgola per consentire le chiamate HTTP cross-origin dal client frontend.            | `http://localhost:5173,http://localhost:3000` | `https://amazing-api-three.vercel.app,https://amazing-web-psi.vercel.app` | No (default: localhost) |
+| `PORT`         | Porta TCP di ascolto del server Express.                                                                                      | `3000` (default)                              | `3000` (o assegnata dall'hosting)                                         |           No            |
+| `NODE_ENV`     | Modalità di runtime Node.js.                                                                                                  | `development`                                 | `production`                                                              |           No            |
+
+##### Frontend (`apps/web`)
+
+| Variabile           | Descrizione                                                           | Valore Sviluppo (`.env.development`) | Valore Produzione (`.env.production`)  | Obbligatoria |
+| :------------------ | :-------------------------------------------------------------------- | :----------------------------------- | :------------------------------------- | :----------: |
+| `VITE_API_BASE_URL` | URL base dell'API backend consumato dall'istanza centralizzata Axios. | `http://localhost:3000`              | `https://amazing-api-three.vercel.app` |    **Sì**    |
+
+#### Procedura di Configurazione Locale Rapida
+
+1. **Predisporre il file `.env` del Backend**:
+   Copiare il template di sviluppo e inserire la connection string del proprio database PostgreSQL:
+
+   ```bash
+   cp apps/api/.env.development apps/api/.env
+   ```
+
+   Modificare quindi `apps/api/.env` valorizzando `DATABASE_URL`:
+
+   ```env
+   DATABASE_URL="postgresql://utente:password@localhost:5432/amazing_db?schema=public"
+   CORS_ORIGIN=http://localhost:5173,http://localhost:3000
+   ```
+
+2. **Predisporre il file `.env` del Frontend**:
+   Copiare il template di sviluppo (già preconfigurato per puntare all'API locale su porta 3000):
+
+   ```bash
+   cp apps/web/.env.development apps/web/.env
+   ```
+
+   Contenuto di `apps/web/.env`:
+
+   ```env
+   VITE_API_BASE_URL=http://localhost:3000
+   ```
+
+### Inizializzazione Database e Seed
+
+Eseguire la generazione del client Prisma, le migrazioni e il popolamento dei dati di test:
+
+```bash
+# Genera il client Prisma
+pnpm prisma:generate
+
+# Esegue le migrazioni del database
+pnpm prisma:migrate
+
+# Popola il database con i dati di test della traccia (Supplier 1, 2, 3 e Monitor Philips)
+pnpm --filter @amazing/api exec tsx prisma/seed.ts
+```
 
 ---
 
@@ -303,96 +404,6 @@ Calcola la valutazione comparativa per una specifica richiesta di riordino.
     }
   ]
 }
-```
-
----
-
-## Requisiti e Installazione
-
-### Prerequisiti
-
-- **Node.js**: versione $\ge 24.0.0$
-- **pnpm**: versione $\ge 11.0.0$
-- Un'istanza database **PostgreSQL** accessibile (es. locale o via container Docker).
-
-### Installazione delle Dipendenze
-
-Dalla radice del monorepo, eseguire:
-
-```bash
-pnpm install
-```
-
-### Configurazione delle Variabili d'Ambiente
-
-Il repository include i file di configurazione preconfigurati per ciascun ambiente in entrambe le applicazioni:
-
-- **Backend API**: [`apps/api/.env.development`](file:///home/dcdavidev/amazing/apps/api/.env.development) e [`apps/api/.env.production`](file:///home/dcdavidev/amazing/apps/api/.env.production)
-- **Frontend Web**: [`apps/web/.env.development`](file:///home/dcdavidev/amazing/apps/web/.env.development) e [`apps/web/.env.production`](file:///home/dcdavidev/amazing/apps/web/.env.production)
-
-> [!IMPORTANT]
-> **Creazione del Database PostgreSQL a cura dell'utente**:  
-> Per motivi di sicurezza e isolamento dei dati, chi effettua il clone del progetto in locale deve **creare un proprio database PostgreSQL** (ad esempio in locale tramite Docker, servizio PostgreSQL di sistema, o un provider cloud come Neon, Supabase, Prisma Postgres) e **inserire la relativa connection string** all'interno della variabile `DATABASE_URL` nel file `.env` di `apps/api/`.
-
-#### Dettaglio delle Variabili d'Ambiente
-
-##### Backend (`apps/api`)
-
-| Variabile      | Descrizione                                                                                                                   | Valore Sviluppo (`.env.development`)          | Valore Produzione (`.env.production`)                                     |      Obbligatoria       |
-| :------------- | :---------------------------------------------------------------------------------------------------------------------------- | :-------------------------------------------- | :------------------------------------------------------------------------ | :---------------------: |
-| `DATABASE_URL` | Connection string PostgreSQL (con schema e opzionale `?sslmode=require`). Usata da Prisma per connessione, migrazioni e seed. | _(A cura dell'utente)_                        | _(A cura dell'utente)_                                                    |         **Sì**          |
-| `CORS_ORIGIN`  | Elenco di origini consentite separate da virgola per consentire le chiamate HTTP cross-origin dal client frontend.            | `http://localhost:5173,http://localhost:3000` | `https://amazing-api-three.vercel.app,https://amazing-web-psi.vercel.app` | No (default: localhost) |
-| `PORT`         | Porta TCP di ascolto del server Express.                                                                                      | `3000` (default)                              | `3000` (o assegnata dall'hosting)                                         |           No            |
-| `NODE_ENV`     | Modalità di runtime Node.js.                                                                                                  | `development`                                 | `production`                                                              |           No            |
-
-##### Frontend (`apps/web`)
-
-| Variabile           | Descrizione                                                           | Valore Sviluppo (`.env.development`) | Valore Produzione (`.env.production`)  | Obbligatoria |
-| :------------------ | :-------------------------------------------------------------------- | :----------------------------------- | :------------------------------------- | :----------: |
-| `VITE_API_BASE_URL` | URL base dell'API backend consumato dall'istanza centralizzata Axios. | `http://localhost:3000`              | `https://amazing-api-three.vercel.app` |    **Sì**    |
-
-#### Procedura di Configurazione Locale Rapida
-
-1. **Predisporre il file `.env` del Backend**:
-   Copiare il template di sviluppo e inserire la connection string del proprio database PostgreSQL:
-
-   ```bash
-   cp apps/api/.env.development apps/api/.env
-   ```
-
-   Modificare quindi `apps/api/.env` valorizzando `DATABASE_URL`:
-
-   ```env
-   DATABASE_URL="postgresql://utente:password@localhost:5432/amazing_db?schema=public"
-   CORS_ORIGIN=http://localhost:5173,http://localhost:3000
-   ```
-
-2. **Predisporre il file `.env` del Frontend**:
-   Copiare il template di sviluppo (già preconfigurato per puntare all'API locale su porta 3000):
-
-   ```bash
-   cp apps/web/.env.development apps/web/.env
-   ```
-
-   Contenuto di `apps/web/.env`:
-
-   ```env
-   VITE_API_BASE_URL=http://localhost:3000
-   ```
-
-### Inizializzazione Database e Seed
-
-Eseguire la generazione del client Prisma, le migrazioni e il popolamento dei dati di test:
-
-```bash
-# Genera il client Prisma
-pnpm prisma:generate
-
-# Esegue le migrazioni del database
-pnpm prisma:migrate
-
-# Popola il database con i dati di test della traccia (Supplier 1, 2, 3 e Monitor Philips)
-pnpm --filter @amazing/api exec tsx prisma/seed.ts
 ```
 
 ---

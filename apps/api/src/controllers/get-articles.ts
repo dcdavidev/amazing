@@ -19,6 +19,10 @@ export async function getArticles(
     response.status(200).json(articles);
   } catch (error: unknown) {
     logger.error(error, 'Failed to retrieve articles');
-    response.status(500).json({ error: 'Failed to retrieve articles' });
+    const details = error instanceof Error ? error.message : String(error);
+    response.status(500).json({
+      error: 'Impossibile recuperare gli articoli',
+      details,
+    });
   }
 }
