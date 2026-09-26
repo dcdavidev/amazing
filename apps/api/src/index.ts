@@ -8,9 +8,13 @@ import { rateLimit } from 'express-rate-limit';
 import compression from 'compression';
 import hpp from 'hpp';
 
-import { logger } from './logger.ts';
+import { allowedOrigins } from './configs/allowed-origins.ts';
+import { port } from './configs/port.ts';
+import { getHealth } from './controllers/get-health.ts';
+import { setupGracefulShutdown } from './lib/setup-graceful-shutdown.ts';
+import { startServer } from './lib/start-server.ts';
+import { checkDatabase } from './middlewares/check-database.ts';
 import { articleRouter } from './routes/article.ts';
-import { healthRouter } from './routes/health.ts';
 import { replenishmentRouter } from './routes/replenishment.ts';
 
 /**
@@ -19,31 +23,38 @@ import { replenishmentRouter } from './routes/replenishment.ts';
 const app = express();
 
 /**
- * Server listening port configured via environment variable or default fallback.
+ * Enable CORS for allowed origins with credentials support.
  */
-const port = process.env.PORT ?? 3000;
-
-/**
- * Allowed CORS origins, permitting local development environments
- * and configured production domains from the CORS_ORIGIN environment variable.
- */
-const allowedOrigins: Array<string | RegExp> = [
-  `http://localhost:${port}`,
-  /^https?:\/\/localhost(?::\d+)?$/,
-  /^https?:\/\/127\.0\.0\.1(?::\d+)?$/,
-  ...(process.env.CORS_ORIGIN ? process.env.CORS_ORIGIN.split(',') : []),
-];
-
 app.use(
   cors({
     origin: allowedOrigins,
     credentials: true,
   })
 );
+
+/**
+ * Compress HTTP response bodies using Gzip/Deflate.
+ */
 app.use(compression());
+
+/**
+ * Parse incoming JSON request payloads into request.body.
+ */
 app.use(express.json());
+
+/**
+ * Parse URL-encoded form data into request.body.
+ */
 app.use(express.urlencoded({ extended: true }));
+
+/**
+ * Protect against HTTP Parameter Pollution attacks.
+ */
 app.use(hpp());
+
+/**
+ * Rate limit requests to prevent abuse and DDoS.
+ */
 app.use(
   rateLimit({
     windowMs: 15 * 60 * 1000,
@@ -52,9 +63,9 @@ app.use(
 );
 
 /**
- * Health check endpoint.
+ * Database availability and migrations check middleware.
  */
-app.use('/health', healthRouter);
+app.use(checkDatabase);
 
 /**
  * Catalog articles endpoints.
@@ -67,12 +78,16 @@ app.use('/articles', articleRouter);
 app.use('/replenishment', replenishmentRouter);
 
 /**
- * Root endpoint.
+ * Root health check endpoint.
  */
-app.get('/', (_request, response) => {
-  response.json({ message: 'Hello from @amazing/api' });
-});
+app.get('/', getHealth);
 
-app.listen(port, () => {
-  logger.info(`Server listening on port ${port}`);
-});
+/**
+ * Start HTTP server with startup error handling.
+ */
+const server = startServer(app, port);
+
+/**
+ * Register graceful shutdown signal listeners.
+ */
+setupGracefulShutdown(server);

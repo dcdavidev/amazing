@@ -1,18 +1,25 @@
 import type { Request, Response } from 'express';
 
+import { checkDatabaseStatus } from '../lib/check-database-status.ts';
 import type { HealthStatus } from '../types/health.ts';
 
 /**
- * Handles health check requests and returns system status metrics.
+ * Handles health check requests and returns system status metrics and database health.
  *
  * @param _request - Incoming Express request.
  * @param response - Outgoing Express response.
+ * @returns Promise resolving when response is sent.
  */
-export function getHealth(_request: Request, response: Response): void {
+export async function getHealth(
+  _request: Request,
+  response: Response
+): Promise<void> {
+  const { status, isRunning } = await checkDatabaseStatus();
   const memory = process.memoryUsage();
 
   const healthData: HealthStatus = {
-    status: 'ok',
+    status: isRunning ? 'ok' : 'error',
+    database: status,
     timestamp: new Date().toISOString(),
     uptime: Math.floor(process.uptime()),
     environment: process.env.NODE_ENV ?? 'development',
@@ -23,5 +30,5 @@ export function getHealth(_request: Request, response: Response): void {
     },
   };
 
-  response.status(200).json(healthData);
+  response.status(isRunning ? 200 : 503).json(healthData);
 }

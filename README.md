@@ -67,8 +67,8 @@ pnpm install
 
 Il repository include i file di configurazione preconfigurati per ciascun ambiente in entrambe le applicazioni:
 
-- **Backend API**: [`apps/api/.env.development`](file:///home/dcdavidev/amazing/apps/api/.env.development) e [`apps/api/.env.production`](file:///home/dcdavidev/amazing/apps/api/.env.production)
-- **Frontend Web**: [`apps/web/.env.development`](file:///home/dcdavidev/amazing/apps/web/.env.development) e [`apps/web/.env.production`](file:///home/dcdavidev/amazing/apps/web/.env.production)
+- **Backend API**: [`apps/api/.env.development`](file:///home/dcdavidev/amazing/apps/api/.env.development).
+- **Frontend Web**: [`apps/web/.env.development`](file:///home/dcdavidev/amazing/apps/web/.env.development).
 
 > [!IMPORTANT]
 > **Creazione del Database PostgreSQL a cura dell'utente**:  
@@ -78,16 +78,29 @@ Il repository include i file di configurazione preconfigurati per ciascun ambien
 
 ##### Backend (`apps/api`)
 
-| Variabile      | Descrizione                                                                                                                   | Valore Sviluppo (`.env.development`)          | Valore Produzione (`.env.production`)                                     |      Obbligatoria       |
-| :------------- | :---------------------------------------------------------------------------------------------------------------------------- | :-------------------------------------------- | :------------------------------------------------------------------------ | :---------------------: |
-| `DATABASE_URL` | Connection string PostgreSQL (con schema e opzionale `?sslmode=require`). Usata da Prisma per connessione, migrazioni e seed. | _(A cura dell'utente)_                        | _(A cura dell'utente)_                                                    |         **Sì**          |
-| `CORS_ORIGIN`  | Elenco di origini consentite separate da virgola per consentire le chiamate HTTP cross-origin dal client frontend.            | `http://localhost:5173,http://localhost:3000` | `https://amazing-api-three.vercel.app,https://amazing-web-psi.vercel.app` | No (default: localhost) |
-| `PORT`         | Porta TCP di ascolto del server Express.                                                                                      | `3000` (default)                              | `3000` (o assegnata dall'hosting)                                         |           No            |
-| `NODE_ENV`     | Modalità di runtime Node.js.                                                                                                  | `development`                                 | `production`                                                              |           No            |
+| Variabile         | Descrizione                                                                                                                                                                                           | Valore Sviluppo (`.env.development`) | Valore Produzione                    |                 Obbligatoria                 |
+| :---------------- | :---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | :----------------------------------- | :----------------------------------- | :------------------------------------------: |
+| `DATABASE_URL`    | Connection string PostgreSQL (con schema e opzionale `?sslmode=require`). Usata da Prisma per connessione, migrazioni e seed.                                                                         | _(A cura dell'utente)_               | _(A cura dell'utente)_               |                    **Sì**                    |
+| `ALLOWED_ORIGINS` | Elenco di origini separate da virgola per richieste HTTP cross-origin (CORS). In locale è opzionale poiché **tutte le porte su `localhost` e `127.0.0.1` sono già accettate di default** dal backend. | _(opzionale in locale)_              | `https://amazing-web-psi.vercel.app` |  No (default: tutte le porte su localhost)   |
+| `PORT`            | Porta TCP di ascolto del server Express. Per cambiarla dal valore predefinito 3000, impostare questa variabile.                                                                                       | `3000` (default)                     | `3000` (o assegnata dall'hosting)    |                      No                      |
+| `LOG_LEVEL`       | Livello minimo di verbosità del logger Pino (`trace`, `debug`, `info`, `warn`, `error`, `fatal`, `silent`).                                                                                           | `debug`                              | `info`                               | No (default: `debug` in dev, `info` in prod) |
+| `NODE_ENV`        | Modalità di runtime Node.js.                                                                                                                                                                          | `development`                        | `production`                         |                      No                      |
+
+> [!NOTE]
+> **Gestione CORS e `ALLOWED_ORIGINS`**:  
+> In ambiente di sviluppo locale **non è necessario** specificare `ALLOWED_ORIGINS=http://localhost:5173` o altre porte: il backend integra regole RegExp che accettano automaticamente qualsiasi richiesta proveniente da `localhost` e `127.0.0.1` su qualunque porta. `ALLOWED_ORIGINS` è richiesta principalmente per autorizzare il dominio pubblico del frontend in produzione (`https://amazing-web-psi.vercel.app`), dispositivi remoti su rete locale LAN o tunnel (es. ngrok). Supporta anche la legacy `CORS_ORIGIN` come fallback.
+
+> [!TIP]
+> **Logging con Pino e formattazione `pino-pretty` (`LOG_LEVEL`)**:  
+> Il backend adotta **Pino** come logger centralizzato per garantire massime prestazioni:
+>
+> - **In sviluppo (`NODE_ENV=development`)**: i log vengono formattati in modo leggibile e colorati nel terminale tramite **`pino-pretty`** (`colorize: true`, timestamp ISO locale, rimozione di PID/hostname), con livello predefinito `debug`.
+> - **In produzione (`NODE_ENV=production`)**: i log vengono emessi in formato JSON strutturato ad alte prestazioni (ideale per log collector come CloudWatch, Datadog, Grafana Loki), con livello predefinito `info`.
+> - **Personalizzazione**: impostare `LOG_LEVEL` nel file `.env` per filtrare la verbosità (es. `LOG_LEVEL=warn` per vedere solo avvisi ed errori, oppure `LOG_LEVEL=trace` per il massimo dettaglio).
 
 ##### Frontend (`apps/web`)
 
-| Variabile           | Descrizione                                                           | Valore Sviluppo (`.env.development`) | Valore Produzione (`.env.production`)  | Obbligatoria |
+| Variabile           | Descrizione                                                           | Valore Sviluppo (`.env.development`) | Valore Produzione                      | Obbligatoria |
 | :------------------ | :-------------------------------------------------------------------- | :----------------------------------- | :------------------------------------- | :----------: |
 | `VITE_API_BASE_URL` | URL base dell'API backend consumato dall'istanza centralizzata Axios. | `http://localhost:3000`              | `https://amazing-api-three.vercel.app` |    **Sì**    |
 
@@ -104,7 +117,8 @@ Il repository include i file di configurazione preconfigurati per ciascun ambien
 
    ```env
    DATABASE_URL="postgresql://utente:password@localhost:5432/amazing_db?schema=public"
-   CORS_ORIGIN=http://localhost:5173,http://localhost:3000
+   # ALLOWED_ORIGINS è opzionale in locale: tutte le porte su localhost e 127.0.0.1 sono già accettate di default
+   # LOG_LEVEL=debug # Opzionale: trace, debug, info, warn, error, fatal, silent
    ```
 
 2. **Predisporre il file `.env` del Frontend**:
@@ -132,7 +146,7 @@ pnpm prisma:generate
 pnpm prisma:migrate
 
 # Popola il database con i dati di test della traccia (Supplier 1, 2, 3 e Monitor Philips)
-pnpm --filter @amazing/api exec tsx prisma/seed.ts
+pnpm db:seed # o pnpm prisma:seed
 ```
 
 ---
