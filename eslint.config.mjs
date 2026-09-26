@@ -92,6 +92,7 @@ export default defineConfig([
     '**/.sass-cache/**',
     '**/.gradle/**',
     '**/.docker/**',
+    '**/.postgres-data/**',
     '**/.kube/**',
     '**/.git/**',
     '**/.svn/**',

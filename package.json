@@ -4,6 +4,9 @@
   "scripts": {
     "build": "pnpm exec turbo run build",
     "check-types": "pnpm exec turbo run check-types",
+    "db:setup": "pnpm --filter @amazing/api db:setup",
+    "db:start": "pnpm --filter @amazing/api db:start",
+    "db:stop": "pnpm --filter @amazing/api db:stop",
     "dev": "pnpm exec turbo run dev",
     "fmt": "pnpm exec prettier --ignore-unknown --write .",
     "lint": "pnpm exec eslint --no-warn-ignored --fix .",

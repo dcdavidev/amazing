@@ -6,6 +6,9 @@
   "scripts": {
     "build": "tsc",
     "check-types": "tsc --noEmit",
+    "db:setup": "tsx postgres-setup.ts",
+    "db:start": "docker compose up -d",
+    "db:stop": "docker compose down",
     "dev": "pnpm exec tsx watch src/index.ts",
     "prisma:generate": "pnpm exec prisma generate",
     "prisma:migrate": "pnpm exec prisma migrate dev",
