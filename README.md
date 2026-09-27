@@ -1,480 +1,410 @@
-# Amazing Shop — Sistema di Valutazione Ordini di Rifornimento (Stock Replenishment)
+# Amazing Shop — Stock Replenishment Evaluation System
 
-> Progetto sviluppato per il **Dev Candidate Assessment Regesta**  
-> Architettura monorepo moderna TypeScript con Backend REST API (Node.js / Express / Prisma) e Frontend Web (React 19 / React Router v7 / Material UI).
+A modern full-stack TypeScript monorepo designed for optimal **Stock Replenishment Evaluation** across multiple suppliers with tiered, seasonal, and total order discounts.
 
----
-
-## DEMO
-
-I servizi sono deployati e accessibili online ai seguenti indirizzi:
-
-- 🌐 **Frontend Web**: [https://amazing-web-psi.vercel.app/](https://amazing-web-psi.vercel.app/)
-- ⚙️ **Backend REST API**: [https://amazing-api-three.vercel.app/](https://amazing-api-three.vercel.app/)
+- 🌐 **Live Web Demo**: [https://amazing-web-psi.vercel.app/](https://amazing-web-psi.vercel.app/)
+- ⚙️ **Live REST API**: [https://amazing-api-three.vercel.app/](https://amazing-api-three.vercel.app/)
+- 📖 **Architectural Decisions**: [`docs/architectural-decisions.md`](docs/architectural-decisions.md)
 
 ---
 
-## Indice
+## Table of Contents
 
-- [DEMO](#demo)
-
-1. [Panoramica del Progetto](#panoramica-del-progetto)
-2. [Requisiti e Installazione](#requisiti-e-installazione)
-3. [Architettura del Monorepo](#architettura-del-monorepo)
-4. [Scelte Tecniche e Design Pattern](#scelte-tecniche-e-design-pattern)
-5. [Analisi Funzionale BDD / TDD](#analisi-funzionale-bdd--tdd)
-6. [Casi di Esempio della Traccia (Verifica dei Dati)](#casi-di-esempio-della-traccia-verifica-dei-dati)
-7. [Specifica degli Endpoint API](#specifica-degli-endpoint-api)
-8. [Guida all'Avvio e all'Utilizzo](#guida-allavvio-e-allutilizzo)
-9. [Qualità del Codice e Strumenti](#qualità-del-codice-e-strumenti)
-
----
-
-## Panoramica del Progetto
-
-Il sistema risolve il problema della **gestione ottimale degli ordini di rifornimento merci da fornitori multipli**:
-
-- Un negozio vende articoli a catalogo che possono essere approvvigionati da fornitori diversi.
-- Ciascun fornitore ha un proprio **prezzo unitario d'acquisto**, una **disponibilità a magazzino (stock)**, **giorni minimi di spedizione** (`minDaysToShip`) e specifiche **regole di sconto**:
-  - Sconti sul **valore totale** dell'ordine (`MIN_TOTAL_AMOUNT`).
-  - Sconti a scaglioni sulla **quantità ordinata** (`MIN_QUANTITY`).
-  - Sconti legati a una determinata **stagione o mese dell'ordine** (`MONTH_PERIOD`).
-- Quando l'operatore seleziona un articolo, una quantità e una data ordine desiderata:
-  1. Il sistema verifica la **giacenza disponibile** presso ogni fornitore, escludendo chi non ha stock sufficiente.
-  2. Calcola l'importo totale dell'ordine applicando in cascata gli sconti spettanti.
-  3. Suggerisce il **miglior fornitore** evidenziando chiaramente la scelta più economica.
-  4. Mostra i **tempi di consegna** (`minDaysToShip`), consentendo all'acquirente di preferire un fornitore più rapido rispetto al più economico se la priorità è la velocità.
+1. [Project Overview](#project-overview)
+2. [Live Demo](#live-demo)
+3. [Prerequisites & Development Environment](#prerequisites--development-environment)
+4. [Getting Started](#getting-started)
+   - [Step 1: Clone & Install Dependencies](#step-1-clone--install-dependencies)
+   - [Step 2: Environment Variables Setup](#step-2-environment-variables-setup)
+   - [Step 3: Database Bootstrapping (Docker or Custom)](#step-3-database-bootstrapping-docker-or-custom)
+   - [Step 4: Migrations and Database Seeding](#step-4-migrations-and-database-seeding)
+   - [Step 5: Running API and Web Concurrently (`pnpm run dev`)](#step-5-running-api-and-web-concurrently-pnpm-run-dev)
+5. [Environment Variables Reference](#environment-variables-reference)
+6. [Functional Specification & BDD Scenarios](#functional-specification--bdd-scenarios)
+7. [Verification of Example Scenarios](#verification-of-example-scenarios)
+8. [API Endpoints Reference](#api-endpoints-reference)
+9. [Monorepo Scripts](#monorepo-scripts)
+10. [Technologies Used & Development Setup](#technologies-used--development-setup)
+11. [Architectural Decisions & Directory Structure](#architectural-decisions--directory-structure)
+12. [AI / Agents Usage](#ai--agents-usage)
 
 ---
 
-## Requisiti e Installazione
+## Project Overview
 
-### Prerequisiti
+In retail and e-commerce logistics, stores stock catalog articles that can be replenished through multiple external suppliers. Each supplier operates under distinct commercial conditions:
 
-- **Node.js**: versione $\ge 24.0.0$
-- **pnpm**: versione $\ge 11.0.0$
-- Un'istanza database **PostgreSQL** accessibile (es. locale o via container Docker).
+- **Unit Purchase Price**: Base wholesale cost per item.
+- **Stock Availability**: Current units on hand at the supplier warehouse.
+- **Shipping Lead Time** (`minDaysToShip`): Estimated business days required for order fulfillment and delivery.
+- **Discount Rules Engine**:
+  - `MIN_TOTAL_AMOUNT`: Percentage discount triggered when the gross order value meets or exceeds a monetary threshold (e.g., 5% off over 1,000 €).
+  - `MIN_QUANTITY`: Tiered quantity discounts (e.g., 3% for >5 units, 5% for >10 units).
+  - `MONTH_PERIOD`: Seasonal promotions applicable only during specific calendar months (e.g., 2% off for orders placed in September).
 
-### Installazione delle Dipendenze
+When a procurement manager selects an article, required quantity, and anticipated order date, the system:
 
-Dalla radice del monorepo, eseguire:
+1. **Validates Stock**: Filters out suppliers lacking sufficient inventory.
+2. **Evaluates Cascading Discounts**: Selects the highest qualified tier for quantity rules, applies percentage discounts in sequence on the remaining balance, and rounds the final invoice price to two decimal places.
+3. **Recommends the Best Supplier**: Clearly highlights the most economical supplier.
+4. **Highlights Shipping Expediency**: Indicates the fastest supplier (`minDaysToShip`), empowering managers to prioritize rapid delivery over marginal price savings when speed is critical.
+
+---
+
+## Live Demo
+
+Both applications are deployed and operational on Vercel:
+
+| Application      | Role                                          | Live URL                                                                       |
+| :--------------- | :-------------------------------------------- | :----------------------------------------------------------------------------- |
+| **Frontend Web** | Single Page Application (React 19 / MUI)      | [https://amazing-web-psi.vercel.app/](https://amazing-web-psi.vercel.app/)     |
+| **Backend API**  | REST API Service (Node.js / Express / Prisma) | [https://amazing-api-three.vercel.app/](https://amazing-api-three.vercel.app/) |
+
+---
+
+## Prerequisites & Development Environment
+
+To run the project locally, ensure your machine satisfies:
+
+- **Node.js**: `>= 20.0.0` (v24 LTS recommended)
+- **pnpm**: `>= 9.0.0` (v11 recommended)
+- **Docker & Docker Compose**: For automated local PostgreSQL 16 containerization (optional if using an external database).
+- **Development OS / Tools**:
+  - **Windows Subsystem for Linux (WSL - Ubuntu 24.04 LTS)**: Primary development environment providing native Linux POSIX performance and Docker daemon integration.
+  - **Visual Studio Code (VS Code)**: IDE with the Remote - WSL extension, ESLint, Prettier, and TypeScript plugins.
+  - **Google Antigravity CLI (`antigravity`)**: Agentic AI pair-programming assistant used throughout project development.
+
+---
+
+## Getting Started
+
+### Step 1: Clone & Install Dependencies
+
+Clone the repository and install all workspace dependencies using `pnpm`:
 
 ```bash
+git clone https://github.com/dcdavidev/amazing.git
+cd amazing
 pnpm install
 ```
 
-### Configurazione delle Variabili d'Ambiente
+---
 
-Il repository include i file di configurazione preconfigurati per ciascun ambiente in entrambe le applicazioni:
+### Step 2: Environment Variables Setup
 
-- **Backend API**: [`apps/api/.env.development`](file:///home/dcdavidev/amazing/apps/api/.env.development).
-- **Frontend Web**: [`apps/web/.env.development`](file:///home/dcdavidev/amazing/apps/web/.env.development).
-
-> [!IMPORTANT]
-> **Creazione del Database PostgreSQL a cura dell'utente**:  
-> Per motivi di sicurezza e isolamento dei dati, chi effettua il clone del progetto in locale deve **creare un proprio database PostgreSQL** (ad esempio in locale tramite Docker, servizio PostgreSQL di sistema, o un provider cloud come Neon, Supabase, Prisma Postgres) e **inserire la relativa connection string** all'interno della variabile `DATABASE_URL` nel file `.env` di `apps/api/`.
-
-#### Dettaglio delle Variabili d'Ambiente
-
-##### Backend (`apps/api`)
-
-| Variabile         | Descrizione                                                                                                                                                                                           | Valore Sviluppo (`.env.development`) | Valore Produzione                    |                 Obbligatoria                 |
-| :---------------- | :---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | :----------------------------------- | :----------------------------------- | :------------------------------------------: |
-| `DATABASE_URL`    | Connection string PostgreSQL (con schema e opzionale `?sslmode=require`). Usata da Prisma per connessione, migrazioni e seed.                                                                         | _(A cura dell'utente)_               | _(A cura dell'utente)_               |                    **Sì**                    |
-| `ALLOWED_ORIGINS` | Elenco di origini separate da virgola per richieste HTTP cross-origin (CORS). In locale è opzionale poiché **tutte le porte su `localhost` e `127.0.0.1` sono già accettate di default** dal backend. | _(opzionale in locale)_              | `https://amazing-web-psi.vercel.app` |  No (default: tutte le porte su localhost)   |
-| `PORT`            | Porta TCP di ascolto del server Express. Per cambiarla dal valore predefinito 3000, impostare questa variabile.                                                                                       | `3000` (default)                     | `3000` (o assegnata dall'hosting)    |                      No                      |
-| `LOG_LEVEL`       | Livello minimo di verbosità del logger Pino (`trace`, `debug`, `info`, `warn`, `error`, `fatal`, `silent`).                                                                                           | `debug`                              | `info`                               | No (default: `debug` in dev, `info` in prod) |
-| `NODE_ENV`        | Modalità di runtime Node.js.                                                                                                                                                                          | `development`                        | `production`                         |                      No                      |
-
-> [!NOTE]
-> **Gestione CORS e `ALLOWED_ORIGINS`**:  
-> In ambiente di sviluppo locale **non è necessario** specificare `ALLOWED_ORIGINS=http://localhost:5173` o altre porte: il backend integra regole RegExp che accettano automaticamente qualsiasi richiesta proveniente da `localhost` e `127.0.0.1` su qualunque porta. `ALLOWED_ORIGINS` è richiesta principalmente per autorizzare il dominio pubblico del frontend in produzione (`https://amazing-web-psi.vercel.app`), dispositivi remoti su rete locale LAN o tunnel (es. ngrok). Supporta anche la legacy `CORS_ORIGIN` come fallback.
-
-> [!TIP]
-> **Logging con Pino e formattazione `pino-pretty` (`LOG_LEVEL`)**:  
-> Il backend adotta **Pino** come logger centralizzato per garantire massime prestazioni:
->
-> - **In sviluppo (`NODE_ENV=development`)**: i log vengono formattati in modo leggibile e colorati nel terminale tramite **`pino-pretty`** (`colorize: true`, timestamp ISO locale, rimozione di PID/hostname), con livello predefinito `debug`.
-> - **In produzione (`NODE_ENV=production`)**: i log vengono emessi in formato JSON strutturato ad alte prestazioni (ideale per log collector come CloudWatch, Datadog, Grafana Loki), con livello predefinito `info`.
-> - **Personalizzazione**: impostare `LOG_LEVEL` nel file `.env` per filtrare la verbosità (es. `LOG_LEVEL=warn` per vedere solo avvisi ed errori, oppure `LOG_LEVEL=trace` per il massimo dettaglio).
-
-##### Frontend (`apps/web`)
-
-| Variabile           | Descrizione                                                           | Valore Sviluppo (`.env.development`) | Valore Produzione                      | Obbligatoria |
-| :------------------ | :-------------------------------------------------------------------- | :----------------------------------- | :------------------------------------- | :----------: |
-| `VITE_API_BASE_URL` | URL base dell'API backend consumato dall'istanza centralizzata Axios. | `http://localhost:3000`              | `https://amazing-api-three.vercel.app` |    **Sì**    |
-
-#### Procedura di Configurazione Locale Rapida
-
-1. **Predisporre il file `.env` del Backend**:
-   Copiare il template di sviluppo e inserire la connection string del proprio database PostgreSQL:
-
-   ```bash
-   cp apps/api/.env.development apps/api/.env
-   ```
-
-   Modificare quindi `apps/api/.env` valorizzando `DATABASE_URL`:
-
-   ```env
-   DATABASE_URL="postgresql://utente:password@localhost:5432/amazing_db?schema=public"
-   # ALLOWED_ORIGINS è opzionale in locale: tutte le porte su localhost e 127.0.0.1 sono già accettate di default
-   # LOG_LEVEL=debug # Opzionale: trace, debug, info, warn, error, fatal, silent
-   ```
-
-2. **Predisporre il file `.env` del Frontend**:
-   Copiare il template di sviluppo (già preconfigurato per puntare all'API locale su porta 3000):
-
-   ```bash
-   cp apps/web/.env.development apps/web/.env
-   ```
-
-   Contenuto di `apps/web/.env`:
-
-   ```env
-   VITE_API_BASE_URL=http://localhost:3000
-   ```
-
-### Inizializzazione Database e Seed
-
-Eseguire la generazione del client Prisma, le migrazioni e il popolamento dei dati di test:
+Both applications provide pre-configured `.env.development` templates. Create your local `.env` files from these templates:
 
 ```bash
-# Genera il client Prisma
+# Backend API configuration:
+cp apps/api/.env.development apps/api/.env
+
+# Frontend Web configuration:
+cp apps/web/.env.development apps/web/.env
+```
+
+- **Backend (`apps/api/.env`)**: Set `DATABASE_URL` to your PostgreSQL connection string (pre-configured for the default local Docker container):
+
+  ```env
+  DATABASE_URL="postgresql://postgres:postgres@localhost:5432/amazing_db?schema=public"
+  PORT=3000
+  NODE_ENV=development
+  LOG_LEVEL=debug
+  ```
+
+- **Frontend (`apps/web/.env`)**: Pre-configured to consume the local API at port 3000:
+  ```env
+  NODE_ENV=development
+  VITE_API_BASE_URL=http://localhost:3000
+  ```
+
+---
+
+### Step 3: Database Bootstrapping (Docker or Custom)
+
+#### Option A: Automated Bootstrapping with Docker (Recommended)
+
+A helper script is provided to automate container setup, polling, migrations, and seeding with a single command:
+
+```bash
+pnpm db:setup
+```
+
+What `pnpm db:setup` does automatically:
+
+1. Verifies local Docker daemon connectivity.
+2. Spawns the PostgreSQL 16 container (`amazing-postgres` listening on port `5432`).
+3. Polls database readiness via `pg_isready` until healthy.
+4. Applies Prisma migrations (`prisma migrate dev`).
+5. Seeds initial catalog articles, suppliers, and discount rules.
+
+**Manual Docker commands**:
+
+```bash
+# Start PostgreSQL container in background:
+pnpm db:start # runs `docker compose up -d`
+
+# Stop PostgreSQL container:
+pnpm db:stop # runs `docker compose down`
+```
+
+**Default Docker Credentials**:
+
+- **Host**: `localhost` | **Port**: `5432` | **Database**: `amazing_db`
+- **User**: `postgres` | **Password**: `postgres`
+
+#### Option B: Using an Existing or Cloud PostgreSQL Database
+
+If using system PostgreSQL or a cloud provider (Neon, Supabase, AWS RDS, Prisma Postgres):
+
+1. Create a database (e.g. `amazing_db`).
+2. Update `DATABASE_URL` in `apps/api/.env`:
+   ```env
+   DATABASE_URL="postgresql://<user>:<password>@<host>:<port>/<dbname>?schema=public"
+   ```
+
+---
+
+### Step 4: Migrations and Database Seeding
+
+If you started your database manually or are using an external database, apply migrations and seed data:
+
+```bash
+# Generate Prisma Client types:
 pnpm prisma:generate
 
-# Esegue le migrazioni del database
+# Apply database migrations:
 pnpm prisma:migrate
 
-# Popola il database con i dati di test della traccia (Supplier 1, 2, 3 e Monitor Philips)
-pnpm db:seed # o pnpm prisma:seed
+# Seed database with initial articles and suppliers:
+pnpm db:seed
 ```
 
 ---
 
-## Architettura del Monorepo
+### Step 5: Running API and Web Concurrently (`pnpm run dev`)
 
-Il progetto è strutturato come **Monorepo gestito con Turborepo e pnpm workspaces**:
+You can launch both the backend REST API and the frontend web application concurrently with a single command:
 
-```text
-amazing/
-├── apps/
-│   ├── api/                     # Backend REST API (Node.js, Express, Prisma ORM)
-│   │   ├── prisma/              # Schema database, migrazioni e seed
-│   │   │   ├── schema.prisma    # Modelli: Article, Supplier, SupplierOffer, DiscountRule
-│   │   │   └── seed.ts          # Popolamento dati di test (Example 1 & 2 della traccia)
-│   │   └── src/
-│   │       ├── controllers/     # Controller Express dedicati (file singoli kebab-case)
-│   │       │   ├── evaluate-replenishment.ts
-│   │       │   ├── get-article-by-id.ts
-│   │       │   ├── get-articles.ts
-│   │       │   └── get-health.ts
-│   │       ├── lib/             # Core Domain Logic pura e deterministica
-│   │       │   ├── discount.ts      # Calcolo e selezione sconti applicabili
-│   │       │   ├── replenishment.ts # Algoritmo di valutazione e confronto fornitori
-│   │       │   └── round.ts         # Arrotondamento contabile a due decimali
-│   │       ├── repositories/    # Layer di persistenza Prisma (file singoli kebab-case)
-│   │       │   ├── get-article-by-id.ts
-│   │       │   ├── get-articles.ts
-│   │       │   ├── get-offers-by-article-id.ts
-│   │       │   └── map-discount-record.ts
-│   │       ├── routes/          # Definizione router Express
-│   │       │   ├── article.ts
-│   │       │   ├── health.ts
-│   │       │   └── replenishment.ts
-│   │       └── types/           # Tipizzazione rigorosa suddivisa per dominio
-│   │           ├── article.ts
-│   │           ├── discount.ts
-│   │           ├── health.ts
-│   │           ├── replenishment.ts
-│   │           └── supplier.ts
-│   │
-│   └── web/                     # Frontend Web SPA (React 19, React Router v7, Material UI v6)
-│       └── app/
-│           ├── routes/          # Pagine dell'applicazione
-│           │   ├── home.tsx         # Vetrina e-commerce con articoli e prezzi minimi
-│           │   └── article.tsx      # Scheda prodotto e simulatore di rifornimento interattivo
-│           ├── services/        # Client API axios per il consumo degli endpoint
-│           │   ├── evaluate-replenishment.ts
-│           │   ├── fetch-article-by-id.ts
-│           │   └── fetch-articles.ts
-│           └── types/           # Tipi TypeScript frontend (speculari all'API)
-│
-├── packages/
-│   └── typescript-config/       # Configurazioni TypeScript condivise (tsconfig.json base)
-├── package.json                 # Script globali monorepo
-├── pnpm-workspace.yaml          # Definizione workspace pnpm
-└── README.md                    # Questa documentazione
+```bash
+pnpm run dev
 ```
 
----
+Powered by **Turborepo**, this command starts:
 
-## Scelte Tecniche e Design Pattern
+- ⚙️ **Backend API**: Listening on [`http://localhost:3000`](http://localhost:3000) (hot reload via `tsx`).
+- 🌐 **Frontend Web**: Available on [`http://localhost:5173`](http://localhost:5173) (Vite HMR).
 
-### 1. Single Responsibility Principle & File Naming
-
-- In conformità con le best practice di manutenibilità, ogni cartella (`controllers`, `repositories`, `lib`, `services`) adotta il principio **un solo file per ogni singola funzione**, denominato rigorosamente in `kebab-case` corrispondente alla funzione esportata (es. `get-articles.ts` $\rightarrow$ `getArticles`, `evaluate-replenishment.ts` $\rightarrow$ `evaluateReplenishment`).
-- Eliminati i file indice (barrel files) ridondanti e i suffissi superflui per evitare dipendenze circolari e garantire import espliciti e tracciabili.
-
-### 2. Disaccoppiamento della Business Logic (Pure Domain Functions)
-
-- La logica di calcolo del rifornimento e degli sconti ([`apps/api/src/lib/replenishment.ts`](file:///home/dcdavidev/amazing/apps/api/src/lib/replenishment.ts), [`apps/api/src/lib/discount.ts`](file:///home/dcdavidev/amazing/apps/api/src/lib/discount.ts)) è implementata come **funzioni pure**:
-  - Non hanno dipendenze da Express, richieste HTTP o connessioni a database.
-  - Ricevono in ingresso strutture dati immutabili e restituiscono risultati deterministici.
-  - Questo le rende immediatamente testabili con unit test senza necessità di mock complessi.
-
-### 3. Algoritmo di Calcolo e Cumulo degli Sconti
-
-- **Sconti a Scaglioni sulla Quantità (`MIN_QUANTITY`)**: Se un fornitore offre sconti multipli a scaglione (es. $>5$ pezzi 3%, $>10$ pezzi 5%), il sistema seleziona **lo scaglione più vantaggioso** qualificato per la quantità ordinata, evitando cumuli impropri dello stesso tipo di sconto.
-- **Sconti sul Valore Totale (`MIN_TOTAL_AMOUNT`)**: Applicati quando l'importo base dell'ordine (`unitPrice * quantity`) raggiunge o supera la soglia specificata.
-- **Sconti Stagionali / Mensili (`MONTH_PERIOD`)**: Calcolati confrontando il mese della data ordine (normalizzato in UTC da 1 a 12) con il mese di validità dello sconto.
-- **Cumulo a Cascata (Compound Discounts)**: Come verificato dagli esempi della traccia, gli sconti di tipologie diverse si applicano in sequenza sull'importo residuo, e l'importo finale viene arrotondato al centesimo tramite precisione numerica con epsilon contabile ([`roundToTwoDecimals`](file:///home/dcdavidev/amazing/apps/api/src/lib/round.ts)).
-
-### 4. Persistenza Dati con Prisma ORM
-
-- Database relazionale strutturato in modo normalizzato: un'offerta fornitore associa un fornitore a un articolo con le proprie regole di sconto figlie (`DiscountRule`), garantendo integrità referenziale con `CASCADE` sulle cancellazioni.
-
-### 5. Frontend E-Commerce Reattivo (React 19 + Material UI)
-
-- **Homepage stile Vetrina**: Visualizza i prodotti disponibili con l'indicazione del prezzo più conveniente calcolato tra tutti i fornitori in stock, bottone "Altre opzioni d'acquisto" e preview grafica.
-- **Simulatore Interattivo**: Nella pagina dell'articolo l'utente può modificare in tempo reale la quantità (tramite pulsanti $+/-$ e input numerico) e la data dell'ordine (tramite date picker). Le card dei fornitori reagiscono istantaneamente aggiornando sconti, prezzi finali e badge di stato.
-- **Gestione Giacenze**: Le offerte dei fornitori che non dispongono di scorte sufficienti per la quantità richiesta vengono mostrate con stile disabilitato (sfondo grigio chiaro, opacità ridotta, pulsante disabilitato con badge d'avviso), garantendo massima trasparenza all'operatore.
+Turborepo multiplexes and color-codes terminal logs from both services simultaneously in real-time, allowing full-stack debugging from a single terminal window.
 
 ---
 
-## Analisi Funzionale BDD / TDD
+## Environment Variables Reference
 
-Come previsto dalle linee guida del test, l'analisi delle funzionalità è formalizzata secondo i paradigmi **BDD (Behavior-Driven Development)**:
+### Backend API (`apps/api`)
 
-### Narrative 1: Selezione del Fornitore più Economico per Rifornimento
+| Variable          | Description                          | Default                       | Allowed Values / Format                                      | Required |
+| :---------------- | :----------------------------------- | :---------------------------- | :----------------------------------------------------------- | :------: |
+| `DATABASE_URL`    | PostgreSQL connection string         | `""`                          | `postgresql://user:pass@host:port/db?schema=public`          | **Yes**  |
+| `PORT`            | HTTP server listening port           | `3000`                        | Integer between `1` and `65535`                              |    No    |
+| `ALLOWED_ORIGINS` | Comma-separated allowed CORS origins | `localhost` & `127.0.0.1`     | Valid URLs (e.g. `https://my-domain.com`)                    |    No    |
+| `LOG_LEVEL`       | Pino logging verbosity               | `debug` (dev) / `info` (prod) | `trace`, `debug`, `info`, `warn`, `error`, `fatal`, `silent` |    No    |
+| `NODE_ENV`        | Application runtime mode             | `development`                 | `development`, `production`, `test`                          |    No    |
+
+### Frontend Web (`apps/web`)
+
+| Variable            | Description                        | Default                 | Allowed Values / Format     | Required |
+| :------------------ | :--------------------------------- | :---------------------- | :-------------------------- | :------: |
+| `VITE_API_BASE_URL` | Base URL pointing to the REST API  | `http://localhost:3000` | Valid HTTP(S) URL           | **Yes**  |
+| `NODE_ENV`          | Build and runtime environment mode | `development`           | `development`, `production` |    No    |
+
+---
+
+## Functional Specification & BDD Scenarios
+
+Business requirements are formalized following **Behavior-Driven Development (BDD)** paradigms:
+
+### Narrative: Optimal Supplier Selection for Replenishment
 
 ```gherkin
 Narrative:
-  As a: Responsabile acquisti del negozio
-  I want: Visualizzare il confronto delle offerte dei fornitori per un articolo e una quantità richiesta
-  so that: Posso individuare l'opzione più economica massimizzando il margine del negozio.
+  As a: Store Procurement Manager
+  I want: To evaluate and compare supplier offers for a catalog article, requested quantity, and order date
+  So that: I can select the most cost-effective and feasible supplier to maximize retail margins.
 ```
 
-#### Acceptance Criteria — Scenario 1: Esclusione fornitori con stock insufficiente
+#### Acceptance Criteria — Scenario 1: Insufficient Stock Exclusion
 
 ```gherkin
-Given: L'articolo "Philips monitor 17"" ha il Fornitore 1 con 8 pezzi a magazzino
-When: Richiedo un ordine di rifornimento di 12 pezzi
-Then: Il Fornitore 1 viene segnalato con stock insufficiente e non è selezionabile tra i fornitori idonei.
+Given: The article "Philips monitor 17"" has Supplier 1 with 8 units in stock
+When: I request a replenishment order of 12 units
+Then: Supplier 1 is excluded from eligible suppliers due to insufficient stock.
 ```
 
-#### Acceptance Criteria — Scenario 2: Applicazione sconto a valore e sconto stagionale (Settembre)
+#### Acceptance Criteria — Scenario 2: Compound Discount Calculation (September)
 
 ```gherkin
-Given: Il Fornitore 3 offre il monitor a 129 € con stock di 23 pezzi
-  And: Il Fornitore 3 offre uno sconto del 5% per ordini superiori a 1000 €
-  And: Il Fornitore 3 offre un ulteriore sconto del 2% per ordini effettuati nel mese di settembre
-When: Richiedo 12 pezzi con data ordine nel mese di settembre
-Then: L'importo base è 1'548.00 €
-  And: Viene applicato lo sconto del 5% (1'470.60 €) e successivamente lo sconto del 2%
-  And: Il prezzo finale risulta pari a 1'441.19 €
-  And: Il Fornitore 3 viene evidenziato come "Miglior Scelta" (più economico).
+Given: Supplier 3 offers the monitor at 129 € with 23 units in stock
+  And: Supplier 3 offers a 5% discount for orders exceeding 1,000 €
+  And: Supplier 3 offers an additional 2% discount for orders placed in September
+When: I request 12 units with an order date in September
+Then: The base amount is 1,548.00 €
+  And: The 5% discount is applied (1,470.60 €) followed by the 2% discount
+  And: The final invoice amount is 1,441.19 €
+  And: Supplier 3 is recommended as "Best Choice" (cheapest).
 ```
 
-#### Acceptance Criteria — Scenario 3: Confronto tra fornitore più economico e fornitore più rapido (Novembre)
+#### Acceptance Criteria — Scenario 3: Price vs Lead Time Trade-Off (November)
 
 ```gherkin
-Given: È il mese di novembre
-  And: Il Fornitore 2 (128 €/pz, spedizione in 7 giorni) applica uno sconto del 5% per >10 pz, risultando in 1'459.20 €
-  And: Il Fornitore 3 (129 €/pz, spedizione in 4 giorni) applica solo lo sconto del 5% per ordini >1000 €, risultando in 1'470.60 €
-When: Richiedo 12 pezzi con data ordine a novembre
-Then: Il Fornitore 2 viene evidenziato come "Miglior Scelta" con importo 1'459.20 €
-  And: Il Fornitore 3 mostra il badge "Spedizione più rapida (4 gg)" consentendomi di valutare la velocità di consegna.
+Given: An order date in November
+  And: Supplier 2 (128 €/unit, 7 days delivery) applies a 5% discount for >10 units (1,459.20 €)
+  And: Supplier 3 (129 €/unit, 4 days delivery) applies a 5% discount for >1,000 € (1,470.60 €)
+When: I request 12 units with an order date in November
+Then: Supplier 2 is highlighted as "Best Choice" with amount 1,459.20 €
+  And: Supplier 3 displays the badge "Fastest Shipping (4 days)" allowing conscious trade-off decisions.
 ```
 
 ---
 
-## Casi di Esempio della Traccia (Verifica dei Dati)
+## Verification of Example Scenarios
 
-Dati di test definiti nella traccia per l'articolo **12x Philips monitor 17"**:
+Test catalog configuration for **12x Philips monitor 17"**:
 
-### Fornitori Configurati
+| Supplier       | Unit Price | In Stock | Lead Time | Discount Rules                                        |
+| :------------- | :--------: | :------: | :-------: | :---------------------------------------------------- |
+| **Supplier 1** |  120.00 €  |  8 pcs   |  5 days   | 5% for orders $\ge 1,000$ €                           |
+| **Supplier 2** |  128.00 €  |  15 pcs  |  7 days   | 3% for $> 5$ pcs; 5% for $> 10$ pcs                   |
+| **Supplier 3** |  129.00 €  |  23 pcs  |  4 days   | 5% for orders $> 1,000$ €; additional 2% in September |
 
-| Fornitore      | Prezzo Unitario | Giacenza | Spedizione | Regole di Sconto                                                |
-| :------------- | :-------------: | :------: | :--------: | :-------------------------------------------------------------- |
-| **Supplier 1** |    120.00 €     |   8 pz   |  5 giorni  | 5% per ordini $\ge 1'000$ €                                     |
-| **Supplier 2** |    128.00 €     |  15 pz   |  7 giorni  | 3% se quantità $> 5$ pz; 5% se quantità $> 10$ pz               |
-| **Supplier 3** |    129.00 €     |  23 pz   |  4 giorni  | 5% per ordini $> 1'000$ €; ulteriore 2% se ordinato a settembre |
+### Example 1: Quantity = 12, Order Date = September
 
----
+- **Supplier 1**: Stock (8) < Required (12) $\rightarrow$ **Excluded (Insufficient Stock)**.
+- **Supplier 2**: $12 \times 128 = 1,536.00$ €; discount 5% ($>10$ pcs) $\rightarrow$ **1,459.20 €** (7 days).
+- **Supplier 3**: $12 \times 129 = 1,548.00$ €; discount 5% ($>1000$ €) $\rightarrow 1,470.60$ €; September discount 2% $\rightarrow$ **1,441.19 €** (4 days).
+- **System Recommendation**:
+  - **Best Choice**: **Supplier 3** (1,441.19 €).
+  - **Fastest Shipping**: **Supplier 3** (4 days).
 
-### Esempio 1: Quantità = 12, Mese = Settembre
+### Example 2: Quantity = 12, Order Date = November 2021
 
-- **Supplier 1**: Scorte (8) < Richiesta (12) $\rightarrow$ **Non idoneo / Escluso per stock insufficiente**.
-- **Supplier 2**: $12 \times 128 = 1'536.00$ €; sconto $5\%$ ($>10$ pz) $\rightarrow$ **1'459.20 €** (7 gg).
-- **Supplier 3**: $12 \times 129 = 1'548.00$ €; sconto $5\%$ ($>1000$ €) $\rightarrow 1'470.60$ €; sconto settembre $2\%$ $\rightarrow$ **1'441.19 €** (4 gg).
-- **Risultato del sistema**:
-  - **Miglior Scelta Evidenziata**: **Supplier 3** (1'441.19 €).
-  - **Spedizione più rapida**: **Supplier 3** (4 giorni).
-
----
-
-### Esempio 2: Quantità = 12, Mese = Novembre 2021
-
-- **Supplier 1**: Scorte (8) < Richiesta (12) $\rightarrow$ **Non idoneo / Escluso per stock insufficiente**.
-- **Supplier 2**: $12 \times 128 = 1'536.00$ €; sconto $5\%$ ($>10$ pz) $\rightarrow$ **1'459.20 €** (7 gg).
-- **Supplier 3**: $12 \times 129 = 1'548.00$ €; sconto $5\%$ ($>1000$ €) $\rightarrow$ **1'470.60 €** (4 gg; nessuno sconto stagionale attivo).
-- **Risultato del sistema**:
-  - **Miglior Scelta Evidenziata**: **Supplier 2** (1'459.20 € $\rightarrow$ più economico di 1'470.60 €).
-  - **Badge Spedizione più rapida**: Assegnato a **Supplier 3** (4 giorni invece di 7) per consentire all'acquirente di decidere consapevolmente.
+- **Supplier 1**: Stock (8) < Required (12) $\rightarrow$ **Excluded (Insufficient Stock)**.
+- **Supplier 2**: $12 \times 128 = 1,536.00$ €; discount 5% ($>10$ pcs) $\rightarrow$ **1,459.20 €** (7 days).
+- **Supplier 3**: $12 \times 129 = 1,548.00$ €; discount 5% ($>1000$ €) $\rightarrow$ **1,470.60 €** (4 days; no seasonal discount).
+- **System Recommendation**:
+  - **Best Choice**: **Supplier 2** (1,459.20 € $\rightarrow$ cheaper than 1,470.60 €).
+  - **Fastest Shipping Badge**: Highlighted on **Supplier 3** (4 days vs 7 days).
 
 ---
 
-## Specifica degli Endpoint API
+## API Endpoints Reference
 
-Tutti gli endpoint rispondono in formato JSON con corretta gestione dei codici di stato HTTP.
+All endpoints return JSON responses with standard HTTP status codes:
 
-### 1. `GET /health`
-
-Verifica lo stato di salute dell'API e le metriche di sistema.
-
-- **Risposta (200 OK)**:
-
-```json
-{
-  "status": "ok",
-  "timestamp": "2026-09-24T14:30:00.000Z",
-  "uptime": 124,
-  "environment": "development",
-  "memoryUsage": {
-    "heapTotal": 45613056,
-    "heapUsed": 30214816,
-    "rss": 82575360
-  }
-}
-```
-
-### 2. `GET /articles`
-
-Restituisce il catalogo degli articoli con il prezzo minimo attualmente rilevato tra le offerte a magazzino.
-
-- **Risposta (200 OK)**:
-
-```json
-[
-  {
-    "id": "e4b9...-uuid",
-    "name": "Philips monitor 17\"",
-    "minPrice": 120,
-    "offersCount": 3
-  }
-]
-```
-
-### 3. `GET /articles/:id`
-
-Restituisce i dati dettagliati dell'articolo selezionato con l'elenco completo di tutte le offerte dei fornitori e le relative regole di sconto.
-
-### 4. `POST /replenishment/evaluate`
-
-Calcola la valutazione comparativa per una specifica richiesta di riordino.
-
-- **Request Body**:
-
-```json
-{
-  "articleId": "e4b9...-uuid",
-  "quantity": 12,
-  "orderDate": "2026-09-24T12:00:00.000Z"
-}
-```
-
-- **Risposta (200 OK)**:
-
-```json
-{
-  "requestedArticleId": "e4b9...-uuid",
-  "requestedQuantity": 12,
-  "orderDate": "2026-09-24T12:00:00.000Z",
-  "eligibleSuppliers": [
-    {
-      "supplierId": "sup-3-uuid",
-      "supplierName": "Supplier 3",
-      "minDaysToShip": 4,
-      "baseAmount": 1548,
-      "totalDiscountPercentage": 6.9,
-      "finalAmount": 1441.19,
-      "isCheapest": true
-    },
-    {
-      "supplierId": "sup-2-uuid",
-      "supplierName": "Supplier 2",
-      "minDaysToShip": 7,
-      "baseAmount": 1536,
-      "totalDiscountPercentage": 5,
-      "finalAmount": 1459.2,
-      "isCheapest": false
-    }
-  ],
-  "excludedSuppliers": [
-    {
-      "supplierId": "sup-1-uuid",
-      "supplierName": "Supplier 1",
-      "reason": "INSUFFICIENT_STOCK"
-    }
-  ]
-}
-```
+| Method | Endpoint                  | Description                                                           |
+| :----- | :------------------------ | :-------------------------------------------------------------------- |
+| `GET`  | `/`                       | Root health check verifying database availability and system metrics  |
+| `GET`  | `/articles`               | Catalog articles with minimum supplier offer price (`minPrice`)       |
+| `GET`  | `/articles/:id`           | Detailed article specifications, supplier offers, and discount rules  |
+| `POST` | `/replenishment/evaluate` | Evaluates replenishment proposals based on quantity and date criteria |
 
 ---
 
-## Guida all'Avvio e all'Utilizzo
+## Monorepo Scripts
 
-### 1. Avvio dell'Ambiente di Sviluppo
+Root commands orchestrated across packages via Turborepo:
 
-Avviare contemporaneamente sia l'API che l'interfaccia Web con Turborepo:
-
-```bash
-pnpm dev
-```
-
-- **Backend API**: attivo su `http://localhost:3000`
-- **Frontend Web**: attivo su `http://localhost:5173`
-
----
-
-### 2. Guida all'Utilizzo dell'Applicazione Web
-
-1. **Catalogo Principale (`/`)**:
-   - Aprire il browser all'indirizzo `http://localhost:5173`.
-   - Verrà visualizzata la card dell'articolo con immagine, badge di disponibilità immediata e indicazione del prezzo di partenza più basso.
-   - Cliccare sulla card o sul pulsante _"Altre opzioni d'acquisto"_ per accedere alla scheda prodotto.
-
-2. **Simulatore di Riordino (`/articles/:id`)**:
-   - Nella sezione _"Parametri d'Ordine e Simulazione Rifornimento"_:
-     - Modificare la quantità con i tasti **$+$** e **$-$** (impostare ad esempio **12**).
-     - Modificare la **Data Ordine**.
-   - **Verifica Esempio 1 (Settembre)**:
-     - Selezionare una data di **Settembre** (es. `2026-09-24`).
-     - **Supplier 1** appare disabilitato con badge rosso _"Giacenza insufficiente: 8 pz su 12 richiesti"_.
-     - **Supplier 3** viene incorniciato in verde con il badge **"Miglior Scelta"** e prezzo totale **1'441.19 €** (grazie allo sconto aggiuntivo del 2% per settembre).
-     - **Supplier 3** mostra anche il badge blu _"Spedizione più rapida (4 gg)"_.
-   - **Verifica Esempio 2 (Novembre)**:
-     - Cambiare la data selezionando un giorno di **Novembre** (es. `2021-11-15`).
-     - Il calcolo si aggiorna in tempo reale: il prezzo di **Supplier 3** sale a **1'470.60 €** (nessuno sconto stagionale).
-     - **Supplier 2** diventa automaticamente la **"Miglior Scelta"** evidenziata in verde a **1'459.20 €**.
-     - Il badge _"Spedizione più rapida (4 gg)"_ rimane visibile su **Supplier 3**, evidenziando chiaramente il compromesso tra risparmio economico e tempi di consegna.
+| Command                | Action                                                                                |
+| :--------------------- | :------------------------------------------------------------------------------------ |
+| `pnpm run dev`         | **Launch both `@amazing/api` and `@amazing/web` concurrently with live reload**       |
+| `pnpm build`           | Compile both backend (`tsc`) and frontend (`react-router build`) for production       |
+| `pnpm check-types`     | Validate static TypeScript types across all workspace packages without emitting files |
+| `pnpm test`            | Execute the complete Vitest test suite (65 tests across 12 files)                     |
+| `pnpm lint`            | Run ESLint across all projects with auto-fix enabled                                  |
+| `pnpm fmt`             | Format entire repository with Prettier                                                |
+| `pnpm db:setup`        | Bootstrap PostgreSQL Docker container, poll readiness, migrate, and seed database     |
+| `pnpm db:start`        | Start local PostgreSQL Docker container via Docker Compose                            |
+| `pnpm db:stop`         | Stop local PostgreSQL Docker container                                                |
+| `pnpm db:seed`         | Seed database with initial articles, suppliers, and discount rules                    |
+| `pnpm prisma:generate` | Regenerate Prisma Client TypeScript types                                             |
+| `pnpm prisma:migrate`  | Apply Prisma migrations in development mode                                           |
 
 ---
 
-## Qualità del Codice e Strumenti
+## Technologies Used & Development Setup
 
-Il progetto adotta standard qualitativi e di tipizzazione estremamente rigorosi:
+### Developer Environment
 
-```bash
-# Controllo tipi statici TypeScript in tutti i package
-pnpm check-types
+- **Windows Subsystem for Linux (WSL 2 — Ubuntu 24.04 LTS)**: Provides native Linux POSIX execution, Docker engine integration, and filesystem performance.
+- **Visual Studio Code (VS Code)**: Unified editor with TypeScript Language Server, ESLint, Prettier, and WSL extensions.
+- **Google Antigravity CLI (`antigravity`)**: Advanced agentic AI pair-programming assistant.
 
-# Analisi statica e linting con ESLint v9 e regole avanzate
-pnpm lint
+### Backend Stack (`@amazing/api`)
 
-# Formattazione codice con Prettier
-pnpm fmt
+- **Node.js (v20+ / v24 LTS)**: High-performance asynchronous non-blocking event runtime.
+- **TypeScript**: Static type safety, domain contracts, and compile-time verification.
+- **Express.js (v5)**: Modern HTTP server with native promise rejection handling in middleware.
+- **Prisma ORM 7 (`@prisma/client`, `@prisma/adapter-pg`, `prisma`)**: Type-safe query engine with declarative migrations and PostgreSQL driver pooling.
+- **PostgreSQL 16**: Enterprise relational database ensuring ACID transactional integrity.
+- **Zod**: Runtime schema validation with non-throwing configuration parsing.
+- **Pino & pino-pretty**: Ultra-fast structured JSON logger with human-readable dev output.
+- **Vitest & Supertest**: Fast Vite-native unit testing and in-memory HTTP integration testing.
 
-# Compilazione di produzione con Turborepo
-pnpm build
-```
+### Frontend Stack (`@amazing/web`)
+
+- **React 19**: Modern UI library with concurrent rendering and hooks.
+- **React Router v7 (SPA Mode)**: Declarative client-side routing, automated route `typegen`, and layout hierarchy.
+- **Material UI v9 & Emotion**: Accessible, production-grade UI component system with CSS variables theming.
+- **Tailwind CSS v4 (`@tailwindcss/vite`)**: Utility-first CSS engine integrated via Vite plugin.
+- **Axios**: Centralized HTTP client with configured baseURL and timeout handling.
+- **Inter Font (`@fontsource-variable/inter`)**: High-legibility modern variable font.
+
+### Monorepo & Build Tooling
+
+- **Turborepo**: High-performance build system with intelligent task pipelines and caching.
+- **pnpm Workspaces**: Fast, disk-efficient package management with strict dependency isolation.
+- **Docker Compose**: Single-command containerized database provisioning.
+
+---
+
+## Architectural Decisions & Directory Structure
+
+For an exhaustive, directory-by-directory breakdown of the codebase architecture, design patterns, and file organization, refer to the dedicated architectural documentation:
+
+👉 **[`docs/architectural-decisions.md`](docs/architectural-decisions.md)**
+
+It provides comprehensive architectural rationales for:
+
+- Separation of Concerns and Clean Architecture boundaries.
+- Pure domain functions in `apps/api/src/lib/` for zero-mock testing.
+- Single Responsibility Principle (one function per file, `kebab-case` naming).
+- Non-throwing environment validation pattern.
+- App factory pattern (`createApp`) for isolated parallel integration testing.
+- Database health guard and Italian maintenance splash screen in `apps/web`.
+
+---
+
+## AI / Agents Usage
+
+This project utilized Google's **Antigravity CLI** (`antigravity`) as an agentic AI pair-programming assistant throughout the design, development, testing, and documentation of both `@amazing/api` and `@amazing/web`.
+
+Antigravity was employed to:
+
+- **Complete Test Suite Development**:
+  - Architected and implemented the entire test suite ([`apps/api/tests/`](apps/api/tests/)), comprising 65 test cases across 12 files spanning unit tests, pure domain logic tests, controller tests, middleware tests, and Supertest end-to-end integration tests.
+- **Database Availability Guard & Maintenance HOC**:
+  - Designed the database availability check pipeline inspecting `GET /` on `VITE_API_BASE_URL`.
+  - Implemented the [`withDatabaseHealth`](apps/web/app/hoc/with-database-health.tsx) HOC and [`DatabaseHealthGuard`](apps/web/app/components/DatabaseHealthGuard.tsx) wrapper in `@amazing/web`.
+  - Created the user-friendly Italian [`MaintenanceSplashScreen`](apps/web/app/components/MaintenanceSplashScreen.tsx) with automatic 30-second interval polling recovery and interactive retry, completely removing technical jargon from end-user views.
+- **Code Quality & Refactoring**:
+  - Enforced the Single Responsibility Principle by decoupling monolithic handlers into modular, single-function files named in `kebab-case`.
+  - Extracted core pricing and replenishment logic into pure domain functions in `apps/api/src/lib/`.
+  - Resolved complex ESLint v9 and Unicorn rules (`unicorn/prefer-ternary`, `unicorn/prefer-simple-condition-first`, `unicorn/no-unnecessary-global-this`).
+  - Upgraded the React Router [`ErrorBoundary`](apps/web/app/root.tsx) in `@amazing/web` with Material UI components, 404 handling, and development stack traces.
+- **Database Seeding & DevOps Scripts**:
+  - Engineered the idempotent database seed pipeline ([`apps/api/prisma/seed/`](apps/api/prisma/seed/)) with modular datasets and upserters.
+  - Built [`apps/api/scripts/postgres-setup.ts`](apps/api/scripts/postgres-setup.ts) for automated Docker container lifecycle management, health polling, and migration runner.
+- **Documentation & JSDoc Standards**:
+  - Generated comprehensive documentation across the monorepo: [`README.md`](README.md), [`apps/api/README.md`](apps/api/README.md), [`apps/web/README.md`](apps/web/README.md), and [`docs/architectural-decisions.md`](docs/architectural-decisions.md).
+  - Enriched JSDoc comments, parameter annotations, and return types across all TypeScript files.
+- **Architectural Exploration**:
+  - Rigorously tested and challenged code implementations, explored multiple design alternatives, identified edge cases, and refined solutions for optimal maintainability, resilience, and performance.
