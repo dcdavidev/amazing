@@ -1,7 +1,7 @@
 import { PrismaPg } from '@prisma/adapter-pg';
 
 import { env } from '../configs/env.ts';
-import { PrismaClient } from '../models/prisma/client.js';
+import { PrismaClient } from '../generated/prisma/client.js';
 
 const globalForPrisma = globalThis as unknown as { prisma: PrismaClient };
 

@@ -2,7 +2,7 @@ import '@dotenvx/dotenvx/config';
 
 import { PrismaPg } from '@prisma/adapter-pg';
 
-import { PrismaClient } from '../../src/models/prisma/client.js';
+import { PrismaClient } from '../../src/generated/prisma/client.js';
 
 const databaseUrl = process.env.DATABASE_URL;
 

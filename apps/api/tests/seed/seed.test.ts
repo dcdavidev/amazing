@@ -14,7 +14,7 @@ import type {
   PrismaClient,
   Supplier,
   SupplierOffer,
-} from '../../src/models/prisma/client.js';
+} from '../../src/generated/prisma/client.js';
 
 describe('Seed Data and Upserters', () => {
   describe('Seed Data Sets', () => {

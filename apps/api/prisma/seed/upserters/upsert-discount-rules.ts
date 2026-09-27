@@ -1,4 +1,4 @@
-import { PrismaClient } from '../../../src/models/prisma/client.js';
+import { PrismaClient } from '../../../src/generated/prisma/client.js';
 import { prisma } from '../client.ts';
 import type { SeedDiscountRule } from '../types.ts';
 import { isDiscountRuleMatch } from './is-discount-rule-match.ts';

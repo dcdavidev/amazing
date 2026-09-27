@@ -1,7 +1,7 @@
 import {
   PrismaClient,
   type Supplier,
-} from '../../../src/models/prisma/client.js';
+} from '../../../src/generated/prisma/client.js';
 import { prisma } from '../client.ts';
 import type { SeedSupplierInput } from '../types.ts';
 

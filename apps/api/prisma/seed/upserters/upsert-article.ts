@@ -1,7 +1,7 @@
 import {
   type Article,
   PrismaClient,
-} from '../../../src/models/prisma/client.js';
+} from '../../../src/generated/prisma/client.js';
 import { prisma } from '../client.ts';
 import type { SeedArticleInput } from '../types.ts';
 

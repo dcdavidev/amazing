@@ -1,4 +1,4 @@
-import type { DiscountRule } from '../../../src/models/prisma/client.js';
+import type { DiscountRule } from '../../../src/generated/prisma/client.js';
 import type { SeedDiscountRule } from '../types.ts';
 
 /**
