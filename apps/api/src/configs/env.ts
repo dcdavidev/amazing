@@ -1,5 +1,3 @@
-import '@dotenvx/dotenvx/config';
-
 import { validateEnv } from './env/validate-env.ts';
 
 export type { AppEnv, LogLevel, NodeEnv } from '../types/env.ts';

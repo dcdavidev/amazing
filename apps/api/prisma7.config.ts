@@ -1,5 +1,5 @@
 /// <reference types="node" />
-import '@dotenvx/dotenvx/config';
+import './src/configs/load-env.ts';
 
 import { defineConfig } from 'prisma/config';
 

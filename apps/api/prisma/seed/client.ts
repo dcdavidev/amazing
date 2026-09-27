@@ -1,5 +1,3 @@
-import '@dotenvx/dotenvx/config';
-
 import { PrismaPg } from '@prisma/adapter-pg';
 
 import { PrismaClient } from '../../src/generated/prisma/client.js';

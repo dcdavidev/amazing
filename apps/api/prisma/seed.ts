@@ -1,4 +1,4 @@
-import '@dotenvx/dotenvx/config';
+import '../src/configs/load-env.ts';
 
 import { prisma } from './seed/client.ts';
 import { seedArticles, seedSuppliers } from './seed/data/index.ts';

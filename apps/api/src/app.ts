@@ -1,5 +1,3 @@
-import '@dotenvx/dotenvx/config';
-
 import express, { type Express } from 'express';
 
 import cors from 'cors';

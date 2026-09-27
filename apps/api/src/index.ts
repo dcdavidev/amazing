@@ -1,3 +1,5 @@
+import './configs/load-env.ts';
+
 import { createApp } from './app.ts';
 import { port } from './configs/port.ts';
 import { setupGracefulShutdown } from './lib/setup-graceful-shutdown.ts';
