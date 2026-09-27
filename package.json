@@ -14,7 +14,8 @@
     "lint:fmt": "pnpm run lint && pnpm run fmt",
     "prisma:generate": "pnpm --filter @amazing/api prisma:generate",
     "prisma:migrate": "pnpm --filter @amazing/api prisma:migrate",
-    "prisma:seed": "pnpm --filter @amazing/api prisma:seed"
+    "prisma:seed": "pnpm --filter @amazing/api prisma:seed",
+    "test": "pnpm --filter @amazing/api test"
   },
   "commitlint": {
     "extends": [
