@@ -1,5 +1,6 @@
 import type { NextFunction, Request, Response } from 'express';
 
+import { env } from '../configs/env.ts';
 import { checkDatabaseStatus } from '../lib/check-database-status.ts';
 import { logger } from '../logger.ts';
 
@@ -36,7 +37,7 @@ export async function checkDatabase(
     return;
   }
 
-  const isProduction = process.env.NODE_ENV === 'production';
+  const isProduction = env.NODE_ENV === 'production';
 
   if (isProduction) {
     logger.warn('@amazing/api is offline. Please try again later.');

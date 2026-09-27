@@ -1,13 +1,11 @@
+import { env } from './env.ts';
 import { port } from './port.ts';
 
 /**
- * Origins string retrieved from environment variables.
- * Uses ALLOWED_ORIGINS as the primary setting and CORS_ORIGIN as a fallback
- * for backward compatibility with previous environment configurations and templates.
- * Falls back to undefined if neither variable is set.
+ * Origins string retrieved and validated from environment variables.
+ * Falls back to undefined if neither variable is set or valid.
  */
-const envOrigins: string | undefined =
-  process.env.ALLOWED_ORIGINS ?? process.env.CORS_ORIGIN ?? undefined;
+const envOrigins: string | undefined = env.ALLOWED_ORIGINS;
 
 /**
  * Allowed CORS origins configuration.

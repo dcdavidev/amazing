@@ -1,5 +1,6 @@
 import type { Request, Response } from 'express';
 
+import { env } from '../configs/env.ts';
 import { checkDatabaseStatus } from '../lib/check-database-status.ts';
 import type { HealthStatus } from '../types/health.ts';
 
@@ -22,7 +23,7 @@ export async function getHealth(
     database: status,
     timestamp: new Date().toISOString(),
     uptime: Math.floor(process.uptime()),
-    environment: process.env.NODE_ENV ?? 'development',
+    environment: env.NODE_ENV,
     memoryUsage: {
       heapTotal: memory.heapTotal,
       heapUsed: memory.heapUsed,

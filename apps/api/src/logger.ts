@@ -1,6 +1,8 @@
 import pino from 'pino';
 
-const isProduction = process.env.NODE_ENV === 'production';
+import { env } from './configs/env.ts';
+
+const isProduction = env.NODE_ENV === 'production';
 
 /**
  * Application-wide Pino logger instance.
@@ -10,10 +12,10 @@ const isProduction = process.env.NODE_ENV === 'production';
 export const logger = pino(
   isProduction
     ? {
-        level: process.env.LOG_LEVEL ?? 'info',
+        level: env.LOG_LEVEL,
       }
     : {
-        level: process.env.LOG_LEVEL ?? 'debug',
+        level: env.LOG_LEVEL,
         transport: {
           target: 'pino-pretty',
           options: {

@@ -1,3 +1,4 @@
+import { env } from '../configs/env.ts';
 import type { DatabaseStatus } from '../types/health.ts';
 import { isDatabaseUrlSet } from './is-database-url-set.ts';
 import { prisma } from './prisma.ts';
@@ -41,7 +42,7 @@ export async function checkDatabaseStatus(): Promise<DatabaseStatusResult> {
     };
   }
 
-  const dbUrl = process.env.DATABASE_URL as string;
+  const dbUrl = env.DATABASE_URL;
 
   try {
     const parsed = new URL(dbUrl);
