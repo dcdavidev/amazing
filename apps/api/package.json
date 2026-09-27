@@ -7,7 +7,7 @@
     "build": "tsc",
     "check-types": "tsc --noEmit",
     "db:seed": "pnpm exec prisma db seed",
-    "db:setup": "tsx postgres-setup.ts",
+    "db:setup": "pnpm exec tsx scripts/postgres-setup.ts",
     "db:start": "docker compose up -d",
     "db:stop": "docker compose down",
     "dev": "pnpm exec tsx watch src/index.ts",
